@@ -1,0 +1,36 @@
+# ESPHome
+secrets.yaml
+*.bin
+*.elf
+*.map
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+.esphome/
+.pioenvs/
+.piolibdeps/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+*.backup

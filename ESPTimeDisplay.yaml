@@ -1,0 +1,201 @@
+# Minimal ESPTime Display
+# Based on ESPTimeCast by @mfactory-osaka
+
+substitutions:
+  device: "esptime-1"
+  name: "ESPTime Display - Living Room"
+
+  # Hardware pins
+  pin_clk: "9"
+  pin_cs: "11"
+  pin_mosi: "12"
+
+  # Display
+  brightness_day: "5"
+  brightness_night: "0"
+  flip_display: "false"
+
+  # WiFi
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  local_domain: ".home"
+
+  # Weather
+  weather_city: "Amsterdam"
+  weather_country: "NL"
+  weather_api_key: !secret openweather_api_key
+
+  # Locale
+  timezone: "Europe/Amsterdam"
+  weekdays: "Zon,Maa,Din,Woe,Don,Vri,Zat"
+
+esphome:
+  name: ${device}
+  friendly_name: ${name}
+  min_version: 2024.6.0
+  name_add_mac_suffix: false
+
+esp32:
+  board: esp32-s2-saola-1
+  framework:
+    type: esp-idf
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+logger:
+  level: WARN
+  logs:
+    component: ERROR
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: ${ssid}
+  password: ${password}
+  domain: ${local_domain}
+  on_connect:
+    - delay: 2s
+    - script.execute: fetch_weather
+  # Fallback Hotspot
+  ap:
+    password: !secret wifi_ap_password
+
+captive_portal:
+
+time:
+  - platform: sntp
+    id: time_sntp
+    timezone: ${timezone}
+    on_time:
+      - seconds: 0
+        then:
+          - lambda: |-
+              // Update brightness based on time
+              int hour = id(time_sntp).now().hour;
+              int brightness = (hour >= 19 || hour < 8) ? ${brightness_night} : ${brightness_day};
+              id(display_matrix)->intensity(brightness);
+
+              // Fetch weather every 5 minutes
+              if (id(time_sntp).now().minute % 5 == 0) {
+                id(fetch_weather).execute();
+              }
+
+http_request:
+  verify_ssl: false
+  timeout: 5s
+
+spi:
+  clk_pin: ${pin_clk}
+  mosi_pin: ${pin_mosi}
+
+font:
+  - file: "https://github.com/trip5/Matrix-Fonts/raw/refs/heads/main/8-series/MatrixLight8X.ttf"
+    id: font_display
+    size: 8
+    glyphs: '!"#$%&()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz{}|~°'
+
+display:
+  - platform: max7219digit
+    id: display_matrix
+    cs_pin: ${pin_cs}
+    num_chips: 4
+    flip_x: ${flip_display}
+    intensity: ${brightness_day}
+    update_interval: 200ms
+    lambda: |-
+      // Alternate between clock (0) and weather (1)
+      static int timer = 0;
+      static int page = 0;
+      timer++;
+
+      int duration = (page == 0) ? 100 : 75; // 20s for clock, 15s for weather
+      if (timer >= duration) {
+        timer = 0;
+        page = (page + 1) % 2;
+      }
+
+      auto now = id(time_sntp).now();
+      if (!now.is_valid()) {
+        it.print(16, 4, id(font_display), TextAlign::CENTER, "SYNC...");
+        return;
+      }
+
+      char buf[32];
+
+      if (page == 0) {
+        // Clock with weekday
+        std::string days = "${weekdays}";
+        int day_idx = now.day_of_week - 1;
+        std::string weekday = "";
+
+        int pos = 0;
+        for (int i = 0; i <= day_idx && pos < days.length(); i++) {
+          size_t comma = days.find(',', pos);
+          if (i == day_idx) {
+            weekday = (comma != std::string::npos)
+              ? days.substr(pos, comma - pos)
+              : days.substr(pos);
+            break;
+          }
+          pos = comma + 1;
+        }
+
+        it.print(0, 0, id(font_display), weekday.c_str());
+        snprintf(buf, sizeof(buf), "%02d:%02d", now.hour, now.minute);
+        it.print(32, 0, id(font_display), TextAlign::RIGHT, buf);
+
+      } else if (page == 1) {
+        // Temperature & humidity or rain indicator
+        if (id(has_weather)) {
+          if (id(is_raining)) {
+            snprintf(buf, sizeof(buf), "%.1f° R", id(temp));
+          } else {
+            snprintf(buf, sizeof(buf), "%.1f° %d%%", id(temp), id(hum));
+          }
+          it.print(16, 4, id(font_display), TextAlign::CENTER, buf);
+        } else {
+          it.print(16, 4, id(font_display), TextAlign::CENTER, "NO DATA");
+        }
+      }
+
+globals:
+  - id: has_weather
+    type: bool
+    initial_value: "false"
+  - id: temp
+    type: float
+    initial_value: "0"
+  - id: hum
+    type: int
+    initial_value: "0"
+  - id: is_raining
+    type: bool
+    initial_value: "false"
+
+script:
+  - id: fetch_weather
+    then:
+      - http_request.get:
+          url: !lambda |-
+            return "https://api.openweathermap.org/data/2.5/weather?q=${weather_city},${weather_country}&appid=${weather_api_key}&units=metric";
+          capture_response: true
+          max_response_buffer_size: 2048
+          on_response:
+            then:
+              - lambda: |-
+                  if (response->status_code != 200) return;
+
+                  JsonDocument doc;
+                  if (deserializeJson(doc, body)) return;
+
+                  id(temp) = doc["main"]["temp"] | 0.0f;
+                  id(hum) = doc["main"]["humidity"] | 0;
+
+                  int weather_id = doc["weather"][0]["id"] | 0;
+                  id(is_raining) = (weather_id >= 200 && weather_id < 600);
+
+                  id(has_weather) = true;
