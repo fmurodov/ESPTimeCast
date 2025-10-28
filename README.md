@@ -105,6 +105,7 @@ substitutions:
   # Weather
   weather_city: "Amsterdam"              # City name or ZIP code (US)
   weather_country: "NL"                  # Two-letter country code
+  weather_api_key: ""                    # Your OpenWeatherMap API key
   unit_system: "metric"                  # "metric" (Celsius) or "imperial" (Fahrenheit)
 
   # Locale
