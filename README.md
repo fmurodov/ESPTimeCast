@@ -97,6 +97,7 @@ substitutions:
   brightness_day: "5"                    # 0-15, brightness during day
   brightness_night: "0"                  # 0-15, brightness at night
   flip_display: "false"                  # "true" to rotate 180°
+  time_format_24h: "true"                # "true" for 24h, "false" for 12h
 
   # WiFi (uses secrets.yaml)
   local_domain: ".home"
@@ -104,7 +105,7 @@ substitutions:
   # Weather
   weather_city: "Amsterdam"              # City name or ZIP code (US)
   weather_country: "NL"                  # Two-letter country code
-  weather_api_key: !secret openweather_api_key
+  unit_system: "metric"                  # "metric" (Celsius) or "imperial" (Fahrenheit)
 
   # Locale
   timezone: "Europe/Amsterdam"           # IANA timezone
@@ -136,10 +137,10 @@ The display automatically alternates between two screens:
 
 | Display Mode | Time Available | Weather Available | Display Output                    |
 |:------------:|:--------------:|:-----------------:|:----------------------------------|
-| **Clock**    | ✅ Yes         | —                 | `Din 14:53` (weekday + time)     |
+| **Clock**    | ✅ Yes         | —                 | `Din 14:53` or `Din 2:53`        |
 | **Clock**    | ❌ No          | —                 | `SYNC...` (syncing NTP time)     |
-| **Weather**  | —              | ✅ Yes            | `21.5° 65%` (temp + humidity)    |
-| **Weather**  | —              | ✅ Yes (raining)  | `21.5° R` (temp + rain indicator)|
+| **Weather**  | —              | ✅ Yes            | `21.5°C 65%` (temp + humidity)   |
+| **Weather**  | —              | ✅ Yes (raining)  | `21.5°C R` (temp + rain indicator)|
 | **Weather**  | —              | ❌ No             | `NO DATA` (no weather fetched)   |
 
 ### Brightness Schedule
@@ -167,7 +168,7 @@ time:
 
 Weather information is fetched from OpenWeatherMap:
 - Updates every 5 minutes automatically
-- Shows temperature in Celsius (metric units)
+- Shows temperature in Celsius or Fahrenheit (configurable)
 - Shows relative humidity percentage
 - Indicates rain conditions with "R" symbol
 
@@ -359,7 +360,6 @@ logger:
 **Consider the original ESPTimeCast if you want:**
 - Web-based configuration without coding
 - More display modes and options
-- 12/24 hour format switching
 - Date display mode
 - Countdown timers
 - Nightscout glucose monitoring
