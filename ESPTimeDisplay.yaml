@@ -14,6 +14,7 @@ substitutions:
   brightness_day: "5"
   brightness_night: "0"
   flip_display: "false"
+  time_format_24h: "true"
 
   # WiFi
   ssid: !secret wifi_ssid
@@ -24,6 +25,7 @@ substitutions:
   weather_city: "Amsterdam"
   weather_country: "NL"
   weather_api_key: !secret openweather_api_key
+  unit_system: "metric"
 
   # Locale
   timezone: "Europe/Amsterdam"
@@ -145,7 +147,14 @@ display:
         }
 
         it.print(0, 0, id(font_display), weekday.c_str());
-        snprintf(buf, sizeof(buf), "%02d:%02d", now.hour, now.minute);
+        int hour = now.hour;
+        const char *fmt = "%02d:%02d";
+        if (!${time_format_24h}) {
+          if (hour > 12) hour -= 12;
+          if (hour == 0) hour = 12;
+          fmt = "%d:%02d";
+        }
+        snprintf(buf, sizeof(buf), fmt, hour, now.minute);
         it.print(32, 0, id(font_display), TextAlign::RIGHT, buf);
 
       } else if (page == 1) {
@@ -181,7 +190,7 @@ script:
     then:
       - http_request.get:
           url: !lambda |-
-            return "https://api.openweathermap.org/data/2.5/weather?q=${weather_city},${weather_country}&appid=${weather_api_key}&units=metric";
+            return "https://api.openweathermap.org/data/2.5/weather?q=${weather_city},${weather_country}&appid=${weather_api_key}&units=${unit_system}";
           capture_response: true
           max_response_buffer_size: 2048
           on_response:
