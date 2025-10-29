@@ -138,11 +138,11 @@ The display automatically alternates between two screens:
 
 | Display Mode | Time Available | Weather Available | Display Output                    |
 |:------------:|:--------------:|:-----------------:|:----------------------------------|
-| **Clock**    | ✅ Yes         | —                 | `Din 14:53` or `Din 2:53`        |
-| **Clock**    | ❌ No          | —                 | `SYNC...` (syncing NTP time)     |
-| **Weather**  | —              | ✅ Yes            | `21.5°C 65%` (temp + humidity)   |
-| **Weather**  | —              | ✅ Yes (raining)  | `21.5°C R` (temp + rain indicator)|
-| **Weather**  | —              | ❌ No             | `NO DATA` (no weather fetched)   |
+| **Clock**    | ✅ Yes         | —                 | `Din 14:53` or `Din 2:53`         |
+| **Clock**    | ❌ No          | —                 | `SYNC...` (syncing NTP time)      |
+| **Weather**  | —              | ✅ Yes            | `21.5° 65%` (temp + humidity)     |
+| **Weather**  | —              | ✅ Yes (raining)  | `21.5° R` (temp + rain indicator) |
+| **Weather**  | —              | ❌ No             | `NO DATA` (no weather fetched)    |
 
 ### Brightness Schedule
 

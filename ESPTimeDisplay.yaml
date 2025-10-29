@@ -160,11 +160,10 @@ display:
       } else if (page == 1) {
         // Temperature & humidity or rain indicator
         if (id(has_weather)) {
-          const char* unit = ("${unit_system}" == "metric") ? "C" : "F";
           if (id(is_raining)) {
-            snprintf(buf, sizeof(buf), "%.1f°%s R", id(temp), unit);
+            snprintf(buf, sizeof(buf), "%.1f° R", id(temp));
           } else {
-            snprintf(buf, sizeof(buf), "%.1f°%s %d%%", id(temp), unit, id(hum));
+            snprintf(buf, sizeof(buf), "%.1f° %d%%", id(temp), id(hum));
           }
           it.print(16, 4, id(font_display), TextAlign::CENTER, buf);
         } else {
